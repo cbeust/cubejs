@@ -21,19 +21,16 @@ var camera = new THREE.PerspectiveCamera(  VIEW_ANGLE,
                                 FAR  );
 var scene = new THREE.Scene();
 var cubes = new Array();
-var lon = 45;
-var lat = 45;
+var lon = 90;
+var lat = 0;
 
 init();
 animate();
 
 function onDocumentKeyDown( event ) {
-  var inc = 20;
 
   var rot = Math.PI / 15;
-  var rotX = Math.cos(Math.PI / 10) * 20;
-  var rotY = Math.sin(Math.PI / 10) * 20;
-  var rotZ = Math.sin(Math.PI / 10) * 20;
+  var inc = 5;
   switch (event.keyCode) {
 
 //          case 38: camera.position.x++; break;  // up
@@ -46,18 +43,15 @@ function onDocumentKeyDown( event ) {
     case 68: cubes[0].rotation.y -= rot; break; // d
 
     case 88: // x
-      if (event.shiftKey) lon++;
-      else lon--;
+      if (event.shiftKey) lon += inc;
+      else lon -= inc;
 //      camera.position.x += (event.shiftKey ? -rotX : rotX);
 //      camera.position.z += (event.shiftKey ? rotZ : -rotZ);
       break;
     case 89:
-      if (event.shiftKey) lat++;
-      else lat--;
-//    case 90: camera.position.z += (event.shiftKey ? -inc : inc) ; break; // z
-//    case 88: camera.position.x += (event.shiftKey ? -inc : inc) ; break; // x
-//    case 89: camera.position.y += (event.shiftKey ? -inc : inc) ; break; // y
-//    case 90: camera.position.z += (event.shiftKey ? -inc : inc) ; break; // z
+      if (event.shiftKey) lat += inc;
+      else lat -= inc;
+      break;
     default: console.log("keyCode:" + event.keyCode)
   }
   console.log("camera:" + camera.position.x + "," + camera.position.y + "," + camera.position.z);
@@ -90,17 +84,12 @@ function init() {
       var cube = new THREE.Mesh(
          new THREE.CubeGeometry(SIZE, SIZE, SIZE),
          sphereMaterial);
-    cubes.push(cube);
-    cube.position.x = i * (SIZE + SPACE);
-    cube.position.y = j * (SIZE + SPACE);
-    cube.position.z = 0;
-
-//      cube.rotation.x = Math.random() * 200 - 100;
-//      cube.rotation.y = Math.random() * 200 - 100;
-//      cube.rotation.z = Math.random() * 200 - 100;
-
+      cubes.push(cube);
+      cube.position.x = i * (SIZE + SPACE);
+      cube.position.y = j * (SIZE + SPACE);
+      cube.position.z = 0;
+  
       console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
-      // add the sphere to the scene
       scene.add(cube);
     }
   }
@@ -114,7 +103,7 @@ function init() {
   plane.rotation.x = - 90 * ( Math.PI / 180 );
   plane.doubleSided = true;
   plane.overdraw = true;
-  scene.add(plane);
+//  scene.add(plane);
 
   document.addEventListener('keydown', onDocumentKeyDown, false);
 }
@@ -125,6 +114,7 @@ function addLights() {
 //    { x: 0, y: 200, z: 0 }
     { x: 0, y: 0, z: 500 }
     , { x: -400, y: 0, z: 0 }
+    , { x: 0, y: 0, z: -500 }
   );
   var colors = new Array(
       0xFF0000,
@@ -134,7 +124,7 @@ function addLights() {
 
   for (var i = 0; i < positions.length; i++) {
     // create a point light
-    var pointLight = new THREE.PointLight(colors[i]);
+    var pointLight = new THREE.PointLight(0xffffff);
     
     // set its position
     var p = positions[i];
