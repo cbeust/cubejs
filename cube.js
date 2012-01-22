@@ -24,6 +24,8 @@ var cubes = new Array();
 var lon = 90;
 var lat = 0;
 
+var group;
+
 init();
 animate();
 
@@ -37,10 +39,10 @@ function onDocumentKeyDown( event ) {
 //          case 40: camera.position.x--; break;  // down
 //          case 37: moveLeft = true; break; // left
 //          case 39: moveRight = true; break; // right
-    case 87: cubes[0].rotation.x += rot; break; // w
-    case 83: cubes[0].rotation.x -= rot; break; // s
-    case 65: cubes[0].rotation.y += rot; break; // a
-    case 68: cubes[0].rotation.y -= rot; break; // d
+    case 87: group.rotation.x += rot; break; // w
+    case 83: group.rotation.x -= rot; break; // s
+    case 65: group.rotation.z += rot; break; // a
+    case 68: group.rotation.z -= rot; break; // d
 
     case 88: // x
       if (event.shiftKey) lon += inc;
@@ -69,30 +71,34 @@ function init() {
   // attach the render-supplied DOM element
   $container.append(renderer.domElement);
 
-  // create the sphere's material
-  var sphereMaterial = new THREE.MeshLambertMaterial(
+  // create the material
+  var material = new THREE.MeshLambertMaterial(
   {
-      color: 0xFFFFFF
+      color: 0xFF0000
   });
 
   // create a new mesh with sphere geometry -
-  // we will cover the sphereMaterial next!
+  // we will cover the material next!
   var SIZE = 50;
   var SPACE = 5;
+  group = new THREE.Object3D();//create an empty container
   for (var i = -1; i <= 1; i++) {
     for (var j = -1; j <= 1; j++) {
+
       var cube = new THREE.Mesh(
          new THREE.CubeGeometry(SIZE, SIZE, SIZE),
-         sphereMaterial);
+         material);
       cubes.push(cube);
       cube.position.x = i * (SIZE + SPACE);
       cube.position.y = j * (SIZE + SPACE);
       cube.position.z = 0;
+      group.add(cube);//add a mesh with geometry to it
   
       console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
-      scene.add(cube);
+      group.add(cube);
     }
   }
+  scene.add(group);//when done, add the group to the scene
 
   addLights();
 
@@ -109,31 +115,13 @@ function init() {
 }
 
 function addLights() {
-
-  var positions = new Array(
-//    { x: 0, y: 200, z: 0 }
-    { x: 0, y: 0, z: 500 }
-    , { x: -400, y: 0, z: 0 }
-    , { x: 0, y: 0, z: -500 }
-  );
-  var colors = new Array(
-      0xFF0000,
-      0x00FF00,
-      0x0000FF
-  );
-
-  for (var i = 0; i < positions.length; i++) {
-    // create a point light
-    var pointLight = new THREE.PointLight(0xffffff);
-    
-    // set its position
-    var p = positions[i];
-    pointLight.position = p;
-    console.log("Light at: " + p.x + "," + p.y + "," + p.z + " color:" + colors[i]);
-
-    // add to the scene
-    scene.add(pointLight);
-  }
+  scene.add(new THREE.AmbientLight(0xffffff));
+  var directionalLight = new THREE.DirectionalLight(0xffffff);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
+  directionalLight = new THREE.DirectionalLight(0xffffff);
+  directionalLight.position.set(-1, -1, -1).normalize();
+  scene.add(directionalLight);
 }
 
 function animate() {
@@ -155,7 +143,7 @@ function render() {
   camera.position.x = distance * Math.sin( phi ) * Math.cos( theta );
   camera.position.y = distance * Math.cos( phi );
   camera.position.z = distance * Math.sin( phi ) * Math.sin( theta );
-  logPosition("Camera:", camera.position);
+//  logPosition("Camera:", camera.position);
 
   // Need to do this at every frame
   camera.lookAt(scene.position);
