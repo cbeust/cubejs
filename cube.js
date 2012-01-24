@@ -24,6 +24,8 @@ var cubes = new Array();
 var lon = 90;
 var lat = 0;
 
+var MINI_ROTATION_RAD = 20 * 180 / Math.PI;
+
 var sides = new Array();
 
 var ALL = new Array(
@@ -65,6 +67,10 @@ var FRONT = new Array(18, 19, 20, 21, 22, 23, 24, 25, 26);
 var FRONT_OBJECTS = new Array();
 var RIGHT = new Array(20, 23, 26, 11, 14, 17, 2, 5, 8);
 var RIGHT_OBJECTS = new Array();
+var BACK = new Array(0, 1, 2, 3, 4, 5, 6, 7, 8);
+var BACK_OBJECTS = new Array();
+var UP = new Array(0, 1, 2, 9, 10, 11, 18, 19, 20);
+var UP_OBJECTS = new Array();
 
 var SIDES = new Array(FRONT, RIGHT);
 
@@ -73,7 +79,7 @@ animate();
 
 function onDocumentKeyDown( event ) {
 
-  var rot = Math.PI / 15;
+  var rot = MINI_ROTATION_RAD;
   var inc = 5;
   switch (event.keyCode) {
 
@@ -83,8 +89,9 @@ function onDocumentKeyDown( event ) {
 //          case 39: moveRight = true; break; // right
     case 87: //sides[0].rotation.x += rot; break; // w
     case 83: //group.rotation.x -= rot; break; // s
-    case 65: rotate(FRONT_OBJECTS, rot); break;
-    case 68: FRONT_OBJECTS.rotation.z -= rot; break; // d
+    case 70: rotateSideAroundZ(FRONT_OBJECTS, rot); break; // f = front
+    case 82: rotateSideAroundX(RIGHT_OBJECTS, rot); break; // r
+    case 85: rotateSideAroundY(UP_OBJECTS, rot); break; // u = up
 
     case 88: // x
       if (event.shiftKey) lon += inc;
@@ -101,15 +108,24 @@ function onDocumentKeyDown( event ) {
   console.log("camera:" + camera.position.x + "," + camera.position.y + "," + camera.position.z);
 }
 
-function rotate(objects, rotationIncrement) {
+function rotateSideAroundZ(objects, rot) {
   var pivot = new THREE.Object3D();
   for (var i = 0; i < objects.length; i++) {
-    rotateAroundPivot(pivot, objects[i]);
-//    objects[i].rotation.z += rotationIncrement;
-//    console.log("x before: " + objects[i].position.x);
-//    objects[i].position.x += Math.cos(Math.PI / 4);
-//    console.log("x after: " + objects[i].position.x);
-//    objects[i].position.y += Math.sin(Math.PI / 4);
+    rotateAroundZ(pivot, objects[i], rot);
+  }
+}
+
+function rotateSideAroundY(objects, rot) {
+  var pivot = new THREE.Object3D();
+  for (var i = 0; i < objects.length; i++) {
+    rotateAroundY(pivot, objects[i], rot);
+  }
+}
+
+function rotateSideAroundX(objects, rot) {
+  var pivot = new THREE.Object3D();
+  for (var i = 0; i < objects.length; i++) {
+    rotateAroundX(pivot, objects[i], rot);
   }
 }
 
@@ -128,7 +144,7 @@ function init() {
   // create a new mesh with sphere geometry -
   // we will cover the material next!
   var SIZE = 50;
-  var SPACE = 5;
+  var SPACE = 20;
 
   // Create the six sides
   for (var fi = 0; fi < ALL.length; fi += 3) {
@@ -148,6 +164,18 @@ function init() {
     if ($.inArray(fi / 3, FRONT) != -1) {
       FRONT_OBJECTS.push(cube);
       console.log("Added cube to front:" + cube + " size:" + FRONT_OBJECTS.length);
+    }
+    if ($.inArray(fi / 3, RIGHT) != -1) {
+      RIGHT_OBJECTS.push(cube);
+      console.log("Added cube to right:" + cube + " size:" + RIGHT_OBJECTS.length);
+    }
+    if ($.inArray(fi / 3, BACK) != -1) {
+      BACK_OBJECTS.push(cube);
+      console.log("Added cube to back:" + cube + " size:" + BACK_OBJECTS.length);
+    }
+    if ($.inArray(fi / 3, UP) != -1) {
+      UP_OBJECTS.push(cube);
+      console.log("Added cube to UP:" + cube + " size:" + UP_OBJECTS.length);
     }
     scene.add(cube);
     console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
@@ -210,6 +238,74 @@ function rotateAroundPivot(pivot, object) {
   logPosition("New position:", object.position);
 }
 
+function rotateAroundPivot2(pivot, object) {
+  var q = toRadians(20);
+  var c = Math.cos(q);
+  var s = Math.sin(q);
+  var y = object.position.y;
+  var z = object.position.z;
+  var m = new THREE.Matrix4(
+      1,0,0,0,
+      0, c*y, s*y, 0,
+      0, -s*z, c*z, 0,
+      0, 0, 0, 1);
+  object.matrix.multiplySelf(m);
+  logPosition("Before matrix: ", object.position);
+  object.position.setPositionFromMatrix(object.matrix);
+  logPosition("After matrix: ", object.position);
+}
+
+function rotateAroundX(pivot, object, q) {
+  logPosition("Before position:", object.position);
+  var y = object.position.y;
+  var z = object.position.z;
+  /*
+   * x' = x
+   * y' = y*cos q - z*sin q
+   * z' = y*sin q + z*cos q
+   */
+  object.rotation.x += q;
+  object.position.y = y*Math.cos(q) - z*Math.sin(q);
+  object.position.z = y*Math.sin(q) + z*Math.cos(q);
+  logPosition("New position:", object.position);
+}
+
+function rotateAroundY(pivot, object, q) {
+  logPosition("Before position:", object.position);
+  var c = Math.cos(q);
+  var s = Math.sin(q);
+  var x = object.position.x;
+  var z = object.position.z;
+
+  /*
+   * x' = z*sin q + x*cos q
+   * y' = y
+   * z' = z*cos q - x*sin q
+   */
+  object.position.x = z*s + x*c;
+  object.rotation.y += q;
+  object.position.z = z*c - x*s;
+  logPosition("New position:", object.position);
+}
+
+function rotateAroundZ(pivot, object, q) {
+  logPosition("Before position:", object.position);
+  var c = Math.cos(q);
+  var s = Math.sin(q);
+  /*
+   * x' = x*cos q - y*sin q
+   * y' = x*sin q + y*cos q
+   * z' = z
+   */
+  var x = object.position.x;
+  var y = object.position.y;
+  object.position.x = x*c - y*s;
+  object.position.y = x*s + y*c;
+  object.rotation.z += q;
+  logPosition("New position:", object.position);
+}
+
+
 function toRadians(degrees) {
   return degrees * (Math.PI/180);
 }
@@ -229,4 +325,29 @@ function render() {
   camera.lookAt(scene.position);
 
   renderer.render( scene, camera );
+}
+
+function align(target, dir, rot) {
+  //Three.js uses a Y up coordinate system, so the cube inits with this vector
+  var up = new THREE.Vector3(0, 1, 0);
+
+  //euler angle between direction vector and up vector
+  var angle = Math.acos(up.dot(dir));
+
+  //cross product of the up vector and direction vector
+  var axis = new THREE.Vector3();
+  axis.cross(up, dir);
+  axis.normalize();
+
+  //rotation to aligns the target with the direction vector
+  var rotate = THREE.Matrix4.rotationAxisAngleMatrix(axis, angle);
+
+  //rotation around direction vector
+  var revolve = THREE.Matrix4.rotationAxisAngleMatrix(dir, rot);
+
+  //compose the rotations (order matters, can be done other ways)
+  revolve.multiplySelf(rotate);
+
+  //assign matrix (autoUpdateMatrix = false)
+  target.matrix = revolve;
 }
