@@ -24,55 +24,16 @@ var cubes = new Array();
 var lon = 90;
 var lat = 0;
 
-var MINI_ROTATION_RAD = 20 * 180 / Math.PI;
+var MINI_ROTATION_RAD = Math.PI / 6;
 
 var sides = new Array();
 
-var ALL = new Array(
-    // Back row: 0-8
-    -1,1,-1,
-    0,1,-1,
-    1,1,-1,
-    -1,0,-1,
-    0,0,-1,
-    1,0,-1,
-    -1,-1,-1,
-    0,-1,-1,
-    1,-1,-1
-
-    // Middle row: 9-17
-    ,-1, 1, 0
-    ,0, 1, 0
-    ,1, 1, 0
-    ,-1, 0, 0
-    ,0, 0, 0  // middle, doesn't really belong to the cube
-    ,1, 0, 0
-    ,-1, -1, 0
-    ,0, -1, 0
-    ,1, -1, 0
-
-    // Front row: 18-26
-    ,-1,1,1
-    ,0,1,1
-    ,1,1,1
-    ,-1,0,1
-    ,0,0,1
-    ,1,0,1
-    ,-1,-1,1
-    ,0,-1,1
-    ,1,-1,1
-);
-
-var FRONT = new Array(18, 19, 20, 21, 22, 23, 24, 25, 26);
-var FRONT_OBJECTS = new Array();
-var RIGHT = new Array(20, 23, 26, 11, 14, 17, 2, 5, 8);
-var RIGHT_OBJECTS = new Array();
-var BACK = new Array(0, 1, 2, 3, 4, 5, 6, 7, 8);
 var BACK_OBJECTS = new Array();
-var UP = new Array(0, 1, 2, 9, 10, 11, 18, 19, 20);
+var FRONT_OBJECTS = new Array();
+var LEFT_OBJECTS = new Array();
+var RIGHT_OBJECTS = new Array();
+var DOWN_OBJECTS = new Array();
 var UP_OBJECTS = new Array();
-
-var SIDES = new Array(FRONT, RIGHT);
 
 init();
 animate();
@@ -82,14 +43,12 @@ function onDocumentKeyDown( event ) {
   var rot = MINI_ROTATION_RAD;
   var inc = 5;
   switch (event.keyCode) {
-
-//          case 38: camera.position.x++; break;  // up
-//          case 40: camera.position.x--; break;  // down
-//          case 37: moveLeft = true; break; // left
-//          case 39: moveRight = true; break; // right
     case 87: //sides[0].rotation.x += rot; break; // w
     case 83: //group.rotation.x -= rot; break; // s
+    case 66: rotateSideAroundZ(BACK_OBJECTS, rot); break; // b = back
+    case 68: rotateSideAroundY(DOWN_OBJECTS, rot); break; // d = down
     case 70: rotateSideAroundZ(FRONT_OBJECTS, rot); break; // f = front
+    case 76: rotateSideAroundX(LEFT_OBJECTS, rot); break; // l
     case 82: rotateSideAroundX(RIGHT_OBJECTS, rot); break; // r
     case 85: rotateSideAroundY(UP_OBJECTS, rot); break; // u = up
 
@@ -147,41 +106,56 @@ function init() {
   var SPACE = 20;
 
   // Create the six sides
-  for (var fi = 0; fi < ALL.length; fi += 3) {
-    // create the material
-    var material = new THREE.MeshLambertMaterial({
-        color: 0xee0000
-    });
+  for (var x = -1; x <= 1; x++) {
+    for (var y = -1; y <= 1; y++) {
+      for (var z = -1; z <= 1; z++) {
+        // create the material
+        var material = new THREE.MeshLambertMaterial({
+          color: 0xee0000
+        });
+        
+        //    for (var i = 0; i < coo.length; i += 3) {
+        var cube = new THREE.Mesh(
+            new THREE.CubeGeometry(SIZE, SIZE, SIZE),
+            material);
+        cubes.push(cube);
+        cube.position.x = x * (SIZE + SPACE);
+        cube.position.y = y * (SIZE + SPACE);
+        cube.position.z = z * (SIZE + SPACE);
+        console.log("x,y,z:" + x + "," + y + "," + z);
+        if (z == 1) {
+          FRONT_OBJECTS.push(cube);
+          console.log("Added cube to front:" + cube + " size:" + FRONT_OBJECTS.length);
+        }
+        if (z == -1) {
+          BACK_OBJECTS.push(cube);
+          console.log("Added cube to back:" + cube + " size:" + BACK_OBJECTS.length);
+        }
+        if (y == 1) {
+          UP_OBJECTS.push(cube);
+          console.log("Added cube to up:" + cube + " size:" + UP_OBJECTS.length);
+        }
+        if (y == -1) {
+          DOWN_OBJECTS.push(cube);
+          console.log("Added cube to down:" + cube + " size:" + DOWN_OBJECTS.length);
+        }
+        if (x == 1) {
+          RIGHT_OBJECTS.push(cube);
+          console.log("Added cube to right:" + cube + " size:" + RIGHT_OBJECTS.length);
+        }
+        if (x == -1) {
+          LEFT_OBJECTS.push(cube);
+          console.log("Added cube to left:" + cube + " size:" + LEFT_OBJECTS.length);
+        }
+        
+        scene.add(cube);
+        console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
+        //    }
+        //    sides.push(thisSide);
+      } // sideCount
+    }
+  }
 
-//    for (var i = 0; i < coo.length; i += 3) {
-    var cube = new THREE.Mesh(
-       new THREE.CubeGeometry(SIZE, SIZE, SIZE),
-       material);
-    cubes.push(cube);
-    cube.position.x = ALL[fi] * (SIZE + SPACE);
-    cube.position.y = ALL[fi + 1] * (SIZE + SPACE);
-    cube.position.z = ALL[fi + 2] * (SIZE + SPACE);
-    if ($.inArray(fi / 3, FRONT) != -1) {
-      FRONT_OBJECTS.push(cube);
-      console.log("Added cube to front:" + cube + " size:" + FRONT_OBJECTS.length);
-    }
-    if ($.inArray(fi / 3, RIGHT) != -1) {
-      RIGHT_OBJECTS.push(cube);
-      console.log("Added cube to right:" + cube + " size:" + RIGHT_OBJECTS.length);
-    }
-    if ($.inArray(fi / 3, BACK) != -1) {
-      BACK_OBJECTS.push(cube);
-      console.log("Added cube to back:" + cube + " size:" + BACK_OBJECTS.length);
-    }
-    if ($.inArray(fi / 3, UP) != -1) {
-      UP_OBJECTS.push(cube);
-      console.log("Added cube to UP:" + cube + " size:" + UP_OBJECTS.length);
-    }
-    scene.add(cube);
-    console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
-//    }
-//    sides.push(thisSide);
-  } // sideCount
 
   // Add all the sides to the scene
 //  for (var i = 0; i < sides.length; i++) {
