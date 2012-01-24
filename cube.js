@@ -24,7 +24,49 @@ var cubes = new Array();
 var lon = 90;
 var lat = 0;
 
-var group;
+var sides = new Array();
+
+var ALL = new Array(
+    // Back row: 0-8
+    -1,1,-1,
+    0,1,-1,
+    1,1,-1,
+    -1,0,-1,
+    0,0,-1,
+    1,0,-1,
+    -1,-1,-1,
+    0,-1,-1,
+    1,-1,-1
+
+    // Middle row: 9-17
+    ,-1, 1, 0
+    ,0, 1, 0
+    ,1, 1, 0
+    ,-1, 0, 0
+    ,0, 0, 0  // middle, doesn't really belong to the cube
+    ,1, 0, 0
+    ,-1, -1, 0
+    ,0, -1, 0
+    ,1, -1, 0
+
+    // Front row: 18-26
+    ,-1,1,1
+    ,0,1,1
+    ,1,1,1
+    ,-1,0,1
+    ,0,0,1
+    ,1,0,1
+    ,-1,-1,1
+    ,0,-1,1
+    ,1,-1,1
+);
+
+var FRONT = new Array(18, 19, 20, 21, 22, 23, 24, 25, 26);
+var FRONT_OBJECTS = new Array();
+var RIGHT = new Array(20, 23, 26, 11, 14, 17, 2, 5, 8);
+var RIGHT_OBJECTS = new Array();
+
+var SIDES = new Array(FRONT, RIGHT);
 
 init();
 animate();
@@ -39,10 +81,10 @@ function onDocumentKeyDown( event ) {
 //          case 40: camera.position.x--; break;  // down
 //          case 37: moveLeft = true; break; // left
 //          case 39: moveRight = true; break; // right
-    case 87: group.rotation.x += rot; break; // w
-    case 83: group.rotation.x -= rot; break; // s
-    case 65: group.rotation.z += rot; break; // a
-    case 68: group.rotation.z -= rot; break; // d
+    case 87: //sides[0].rotation.x += rot; break; // w
+    case 83: //group.rotation.x -= rot; break; // s
+    case 65: rotate(FRONT_OBJECTS, rot); break;
+    case 68: FRONT_OBJECTS.rotation.z -= rot; break; // d
 
     case 88: // x
       if (event.shiftKey) lon += inc;
@@ -59,6 +101,18 @@ function onDocumentKeyDown( event ) {
   console.log("camera:" + camera.position.x + "," + camera.position.y + "," + camera.position.z);
 }
 
+function rotate(objects, rotationIncrement) {
+  var pivot = new THREE.Object3D();
+  for (var i = 0; i < objects.length; i++) {
+    rotateAroundPivot(pivot, objects[i]);
+//    objects[i].rotation.z += rotationIncrement;
+//    console.log("x before: " + objects[i].position.x);
+//    objects[i].position.x += Math.cos(Math.PI / 4);
+//    console.log("x after: " + objects[i].position.x);
+//    objects[i].position.y += Math.sin(Math.PI / 4);
+  }
+}
+
 function init() {
   // the camera starts at 0,0,0 so pull it back
   camera.position.x = 0;
@@ -71,34 +125,40 @@ function init() {
   // attach the render-supplied DOM element
   $container.append(renderer.domElement);
 
-  // create the material
-  var material = new THREE.MeshLambertMaterial(
-  {
-      color: 0xFF0000
-  });
-
   // create a new mesh with sphere geometry -
   // we will cover the material next!
   var SIZE = 50;
   var SPACE = 5;
-  group = new THREE.Object3D();//create an empty container
-  for (var i = -1; i <= 1; i++) {
-    for (var j = -1; j <= 1; j++) {
 
-      var cube = new THREE.Mesh(
-         new THREE.CubeGeometry(SIZE, SIZE, SIZE),
-         material);
-      cubes.push(cube);
-      cube.position.x = i * (SIZE + SPACE);
-      cube.position.y = j * (SIZE + SPACE);
-      cube.position.z = 0;
-      group.add(cube);//add a mesh with geometry to it
-  
-      console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
-      group.add(cube);
+  // Create the six sides
+  for (var fi = 0; fi < ALL.length; fi += 3) {
+    // create the material
+    var material = new THREE.MeshLambertMaterial({
+        color: 0xee0000
+    });
+
+//    for (var i = 0; i < coo.length; i += 3) {
+    var cube = new THREE.Mesh(
+       new THREE.CubeGeometry(SIZE, SIZE, SIZE),
+       material);
+    cubes.push(cube);
+    cube.position.x = ALL[fi] * (SIZE + SPACE);
+    cube.position.y = ALL[fi + 1] * (SIZE + SPACE);
+    cube.position.z = ALL[fi + 2] * (SIZE + SPACE);
+    if ($.inArray(fi / 3, FRONT) != -1) {
+      FRONT_OBJECTS.push(cube);
+      console.log("Added cube to front:" + cube + " size:" + FRONT_OBJECTS.length);
     }
-  }
-  scene.add(group);//when done, add the group to the scene
+    scene.add(cube);
+    console.log("Cube position:" + cube.position.x + "," + cube.position.y + "," + cube.position.z);
+//    }
+//    sides.push(thisSide);
+  } // sideCount
+
+  // Add all the sides to the scene
+//  for (var i = 0; i < sides.length; i++) {
+//    scene.add(sides[i]);//when done, add the group to the scene
+//  }
 
   addLights();
 
@@ -132,6 +192,26 @@ function animate() {
 
 function logPosition(s, vector) {
   console.log(s + ": " + vector.x + "," + vector.y + "," + vector.z);
+}
+
+function rotateAroundPivot(pivot, object) {
+  var degrees = 30;
+  var position = object.position;
+  var offsetX = position.x - pivot.position.x;
+  var offsetY = position.y - pivot.position.y;
+  var radians = toRadians(degrees);
+  var nx = Math.cos(radians) * offsetX - Math.sin(radians) * offsetY;
+  var ny = Math.sin(radians) * offsetX + Math.cos(radians)*offsetY;
+
+  logPosition("Before position:", object.position);
+  object.rotation.z += radians;
+  object.position.x = nx + pivot.position.x;
+  object.position.y = ny + pivot.position.y;
+  logPosition("New position:", object.position);
+}
+
+function toRadians(degrees) {
+  return degrees * (Math.PI/180);
 }
 
 function render() {
